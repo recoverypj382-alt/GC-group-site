@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlock Your Prize</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom animations */
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s infinite ease-in-out;
+        }
+        .toast-enter {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        .toast-enter-active {
+            transform: translateY(0);
+            opacity: 1;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toast-exit {
+            transform: translateY(100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-900 via-purple-800 to-indigo-900 min-h-screen flex items-center justify-center p-4 font-sans text-gray-800">
+
+    <main class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden relative">
+        
+        <!-- Header Image / Graphic area -->
+        <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-32 flex items-center justify-center relative overflow-hidden">
+            <div class="absolute w-40 h-40 bg-white opacity-10 rounded-full -top-10 -right-10"></div>
+            <div class="absolute w-20 h-20 bg-white opacity-10 rounded-full bottom-0 left-5"></div>
+            <i class="fas fa-gift text-6xl text-white drop-shadow-md z-10 animate-pulse-soft"></i>
+        </div>
+
+        <div class="p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Exclusive Reward!</h1>
+                <p class="text-gray-600 text-sm">
+                    Support our channel to unlock your secret prize link. Share with <strong class="text-purple-600">10 different groups</strong> on WhatsApp or Telegram to fill the bar!
+                </p>
+            </div>
+
+            <div class="mb-8">
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-sm font-bold text-gray-700 uppercase tracking-wider">Progress</span>
+                    <span id="progress-text" class="text-lg font-extrabold text-purple-600">0 / 10</span>
+                </div>
+                <!-- Progress Bar Container -->
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner relative">
+                    <!-- Progress Bar Fill -->
+                    <div id="progress-bar-fill" class="bg-gradient-to-r from-purple-500 to-pink-500 h-4 rounded-full transition-all duration-700 ease-out w-0 shadow-md"></div>
+                </div>
+            </div>
+
+            <!-- Share Section -->
+            <div id="share-section" class="flex flex-col gap-4">
+                <button id="share-whatsapp-btn" class="w-full bg-[#25D366] hover:bg-[#1ebd59] text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-3 text-lg">
+                    <i class="fab fa-whatsapp text-2xl"></i>
+                    Share to WhatsApp
+                </button>
+                <p class="text-xs text-center text-gray-400 mt-2">
+                    * Make sure to share to a different group each time to complete the progress.
+                </p>
+            </div>
+
+            <!-- Prize Section (Hidden Initially) -->
+            <div id="prize-section" class="hidden flex-col gap-4 items-center animate-pulse-soft">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fas fa-check text-3xl text-green-500"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 text-center">Verification Complete!</h2>
+                <p class="text-gray-500 text-center text-sm mb-2">Thank you for your support. Your link is ready.</p>
+                <a id="get-prize-btn" href="#" target="_blank" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-3 text-lg">
+                    <i class="fas fa-external-link-alt"></i>
+                    Get Prize Link
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Notification Toast -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 z-50 toast-enter hidden">
+        <i id="toast-icon" class="fas fa-info-circle text-blue-400"></i>
+        <span id="toast-message" class="text-sm font-medium">Notification message here</span>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURATION: CHANGE THESE LINKS
+        // ==========================================
+        const YOUR_CHANNEL_LINK = "https://youtube.com/@yourchannel"; // The link you want them to share
+        const YOUR_PRIZE_LINK = "https://example.com/your-secret-prize"; // The link they get at the end
+        
+        // Share text format
+        const shareMessage = `Hey guys, check out this amazing channel! I highly recommend it: ${YOUR_CHANNEL_LINK}`;
+        const encodedShareMessage = encodeURIComponent(shareMessage);
+        const whatsappShareUrl = `https://api.whatsapp.com/send?text=${encodedShareMessage}`;
+        // ==========================================
+
+        // DOM Elements
+        const shareBtn = document.getElementById('share-whatsapp-btn');
+        const progressBar = document.getElementById('progress-bar-fill');
+        const progressText = document.getElementById('progress-text');
+        const shareSection = document.getElementById('share-section');
+        const prizeSection = document.getElementById('prize-section');
+        const getPrizeBtn = document.getElementById('get-prize-btn');
+        
+        // Toast Elements
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+
+        // State Variables
+        let currentShares = 0;
+        const requiredShares = 10;
+        let isWaitingForUserToReturn = false;
+        let toastTimeout;
+
+        // Initialize prize link
+        getPrizeBtn.href = YOUR_PRIZE_LINK;
+
+        // Function to show custom notifications
+        function showToast(message, type = 'info') {
+            clearTimeout(toastTimeout);
+            
+            toastMessage.textContent = message;
+            
+            if (type === 'success') {
+                toastIcon.className = 'fas fa-check-circle text-green-400';
+            } else if (type === 'warning') {
+                toastIcon.className = 'fas fa-exclamation-triangle text-yellow-400';
+            } else {
+                toastIcon.className = 'fas fa-info-circle text-blue-400';
+            }
+
+            toast.classList.remove('hidden');
+            // Trigger reflow to restart animation
+            void toast.offsetWidth; 
+            toast.classList.remove('toast-enter');
+            toast.classList.add('toast-enter-active');
+
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('toast-exit');
+                    toast.classList.add('toast-enter');
+                }, 300); // Wait for exit animation
+            }, 3000);
+        }
+
+        // Function to update the visual UI based on current share count
+        function updateUI() {
+            // Update Text
+            progressText.textContent = `${currentShares} / ${requiredShares}`;
+            
+            // Update Bar Width
+            const percentage = (currentShares / requiredShares) * 100;
+            progressBar.style.width = `${percentage}%`;
+
+            // Check if goal reached
+            if (currentShares >= requiredShares) {
+                shareSection.classList.add('hidden');
+                prizeSection.classList.remove('hidden');
+                prizeSection.classList.add('flex'); // Because it's a flex container
+                showToast("Congratulations! You've unlocked the prize!", "success");
+            } else if (currentShares > 0) {
+                const remaining = requiredShares - currentShares;
+                showToast(`Great! Only ${remaining} more group${remaining !== 1 ? 's' : ''} to go!`, "info");
+            }
+        }
+
+        // 1. User clicks the share button
+        shareBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            if (currentShares >= requiredShares) return;
+
+            // Open WhatsApp in a new tab/window
+            window.open(whatsappShareUrl, '_blank');
+            
+            // Set flag indicating they left to share
+            isWaitingForUserToReturn = true;
+
+            // Fallback: If visibility API fails or they use a floating window, 
+            // auto-verify after 4 seconds to ensure they don't get stuck.
+            setTimeout(() => {
+                if (isWaitingForUserToReturn) {
+                    processShareSuccess();
+                }
+            }, 4000);
+        });
+
+        // 2. User returns to the tab (simulating that they finished sharing)
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible" && isWaitingForUserToReturn) {
+                processShareSuccess();
+            }
+        });
+
+        // 3. Process the successful share
+        function processShareSuccess() {
+            isWaitingForUserToReturn = false;
+            
+            // Add a slight realistic delay before updating the progress
+            setTimeout(() => {
+                if (currentShares < requiredShares) {
+                    currentShares++;
+                    updateUI();
+                }
+            }, 500);
+        }
+
+        // Initialize UI
+        updateUI();
+
+    </script>
+</body>
+      </html>
